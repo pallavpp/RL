@@ -1,3 +1,4 @@
+import time
 import numpy as np
 from utils import *
 
@@ -45,7 +46,6 @@ class Selfish_KL_UCB:
 			self.pulls[np.arange(self.env.M), arms_t] += 1
 			self.mu_hat = self.compute_mu_hat()
 			self.collisions += collisions_t
-
 			if self.save_history:
 				self.observed_reward_hist[:, :, self.t] = rewards
 				self.arm_history[:, self.t] = arms_t
@@ -55,7 +55,10 @@ class Selfish_KL_UCB:
 	
 	def run(self):
 		self.reset()
+		tic = time.time()
 		while self.t < self.env.T:
+			if self.t == 10000:
+				print(f"Estimated time remaining: {round((self.env.T-10000)*(time.time()-tic)/(10000*60), 1)} min")
 			ucb_idx = self.compute_ucb_idx()
 			if self.randomization:
 				ucb_idx +=  np.random.normal(0, 1/(self.t+1), size=(self.env.M, self.env.K))
