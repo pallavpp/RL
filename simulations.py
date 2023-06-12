@@ -75,5 +75,5 @@ def run_all_simulations(env_list, n_exp, randomization, skip_existing_sim):
 			print(f"Total collisions per arm saved")
 			print()
 
-		print("Complete")
-		print()
+	print("Complete")
+	print()
