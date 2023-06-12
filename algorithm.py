@@ -3,10 +3,9 @@ import numpy as np
 from utils import *
 
 class Selfish_KL_UCB:
-	def __init__(self, environment, randomization, save_history):
+	def __init__(self, environment, randomization):
 		self.env = environment
 		self.randomization = randomization
-		self.save_history = save_history
 		self.klucb = np.vectorize(klucb)
 		self.c = 3
 		self.reset()
@@ -18,13 +17,9 @@ class Selfish_KL_UCB:
 		self.total_observed_reward = np.zeros((self.env.M, self.env.K))
 		self.pulls = np.zeros((self.env.M, self.env.K), dtype=np.int32)
 		self.mu_hat = np.zeros((self.env.M, self.env.K))
+		self.arm_history = np.zeros((self.env.M, self.env.T))
 		self.collisions = np.zeros((self.env.M, self.env.K)) # self.collisions[i,j] = nb of collisions of player i on arm j
-		if self.save_history:
-			self.observed_reward_hist = np.zeros((self.env.M,self.env.K, self.env.T))
-			self.arm_history = np.zeros((self.env.M, self.env.T))
-			self.pulls_hist = np.zeros((self.env.M, self.env.K, self.env.T), dtype=np.int32)
-			self.collision_hist = np.zeros((self.env.K, self.env.T))
-			self.mu_hat_hist = np.zeros((self.env.M, self.env.K, self.env.T))
+		self.collision_hist = np.zeros((self.env.K, self.env.T))
 
 	def compute_ucb_idx(self):
 		ucb_idx = np.zeros((self.env.M, self.env.K))
@@ -45,20 +40,17 @@ class Selfish_KL_UCB:
 			self.total_observed_reward[np.arange(self.env.M), arms_t] += rewards
 			self.pulls[np.arange(self.env.M), arms_t] += 1
 			self.mu_hat = self.compute_mu_hat()
+			self.arm_history[:, self.t] = arms_t
 			self.collisions += collisions_t
-			if self.save_history:
-				self.observed_reward_hist[:, :, self.t] = rewards
-				self.arm_history[:, self.t] = arms_t
-				self.pulls_hist[np.arange(self.env.M), arms_t, self.t] += 1
-				self.collision_hist[:, self.t] += np.max(collisions_t, axis=0)
-				self.mu_hat_hist[:, :, self.t] = self.mu_hat
+			self.collision_hist[:, self.t] += np.sum(collisions_t, axis=0)
 	
 	def run(self):
 		self.reset()
 		tic = time.time()
 		while self.t < self.env.T:
-			if self.t == 10000:
-				print(f"Estimated time remaining: {round((self.env.T-10000)*(time.time()-tic)/(10000*60), 1)} min")
+			if self.t == 1000:
+				print(f"Estimated time remaining: {round((self.env.T-1000)*(time.time()-tic)/(1000*60), 1)} min")
+				print()
 			ucb_idx = self.compute_ucb_idx()
 			if self.randomization:
 				ucb_idx +=  np.random.normal(0, 1/(self.t+1), size=(self.env.M, self.env.K))
